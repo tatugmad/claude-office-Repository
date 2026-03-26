@@ -58,6 +58,16 @@ troubleshoot要素の内容に限り、ユーザーが困っている場合にCl
 ---
 
 セットアップは全部で **5つのステップ** があり、所要時間は **30〜40分** ほどです。1ステップずつ進めますので、わからないことがあればいつでもお聞きください。
+
+---
+
+**Claude利用環境に必要なもの:**
+
+- **メールアドレス** — GitHubアカウントの作成に使います。普段お使いのもので構いません
+- **claude.ai の有料アカウント**（Pro プラン以上） — Claude Code とプロジェクト機能に必要です
+- **Webブラウザ** — Google Chrome を推奨します
+
+いずれも、この後のステップで順番に確認していきます。不足しているものがあっても、その場でご案内しますのでご安心ください。
 </message>
 <next>Q1</next>
 </screen>
@@ -71,13 +81,19 @@ troubleshoot要素の内容に限り、ユーザーが困っている場合にCl
 </screen>
 
 <screen id="Q2">
-<message>セットアップを始める前に、以下の準備状況を確認させてください。不足しているものはありますか？</message>
+<message>
+セットアップには以下の3つが必要です。お持ちのものをすべてチェックしてください。
+
+- **メールアドレス**: GitHubアカウントの作成に使います。普段お使いのもので構いません
+- **claude.ai の有料アカウント（Pro プラン以上）**: Claude Code とプロジェクト機能に必要です
+- **Webブラウザ**: Google Chrome を推奨します
+</message>
 <choices type="multi">
-<choice next="Q3">すべて揃っている（メールアドレス、claude.ai 有料プラン、Webブラウザ）</choice>
-<choice next="END">メールアドレスを持っていない</choice>
-<choice next="Q2_PRO">claude.ai の有料プラン（Pro以上）に未加入</choice>
-<choice next="END">Webブラウザが使えない</choice>
+<choice next="Q3">メールアドレスを持っている</choice>
+<choice next="Q3">claude.ai の有料プラン（Pro以上）に加入済み</choice>
+<choice next="Q3">Webブラウザが使える</choice>
 </choices>
+<validate>3つすべてにチェックが入っている場合 → Q3 へ進む。「claude.ai の有料プラン」にチェックがない場合 → Q2_PRO へ進む。「メールアドレス」または「Webブラウザ」にチェックがない場合 → END へ進む。</validate>
 </screen>
 
 <screen id="Q2_PRO">
