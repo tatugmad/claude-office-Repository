@@ -8,8 +8,8 @@
 
 セッション開始時に、自身の実行環境を判定し、対応する環境別mdを読み込むこと。**判定結果はセッション中を通じて忘れないこと。**
 
-- **bashツールが利用可能** → Claudeコードと判定 → `_claude/env-code.md` を読み込む。**`_claude/env-chat.md` は読み込み禁止。**
-- **bashツールが利用不可** → Claudeチャットと判定 → `_claude/env-chat.md` を読み込む。**`_claude/env-code.md` は読み込み禁止。**
+- **プロジェクト指示（システムプロンプト）に `CLAUDE_ENV=chat` が含まれている** → Claudeチャットと判定 → `_claude/env-chat.md` を読み込む。**`_claude/env-code.md` は読み込み禁止。**
+- **上記が含まれていない** → Claudeコードと判定 → `_claude/env-code.md` を読み込む。**`_claude/env-chat.md` は読み込み禁止。**
 
 環境別mdには、ファイル操作の手段やツールの使い方など、環境固有のルールが記載されている。本CLAUDE.mdの共通ルールと環境別mdの両方に従うこと。**環境別mdを読み込んだ後に、以降のセッション開始フローを実行すること。**
 
