@@ -75,6 +75,9 @@
 - **登録内容**: 「プロジェクトの指示を編集」に以下を貼り付ける。TODO 1〜3で記録した実際の値を埋め込んだ完成形テキストをClaudeが生成してユーザーに提示すること（プレースホルダ不可）:
 
 ```
+## 環境識別
+CLAUDE_ENV=chat
+
 ## リポジトリアクセス
 
 GitHub Personal Access Token（Fine-grained、Contents Read-write）:
