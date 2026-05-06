@@ -19,6 +19,7 @@
 - トラブル発生時 → `_claude/troubleshoot.md` を読み込むこと
 - プロジェクト固有情報 → `_claude/project.md` を参照すること
 - 利用者情報 → `_claude/profile.md` を参照すること（セッション開始時に毎回読み込む）
+- aipatto MCP 利用時のツール発見手順 → 当該プロジェクトで aipatto MCP を利用する場合は、`tatugmad/aipatto-server` リポジトリの CLAUDE.md「### MCP ツール発見手順」セクションを参照すること（130 件超のツールを deferred 提供する仕様への対応として、`select:exact_name` 形式での確実取得を含む 3 ステップ手順を厳守する）
 
 ## 基本ルール
 
