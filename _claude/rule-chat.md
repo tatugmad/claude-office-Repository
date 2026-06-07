@@ -12,7 +12,7 @@
 ## UIツール
 
 - セッション中にユーザーへ選択を求める場面では、チャット環境で利用可能な選択肢提示機能を使ってよい
-- ただしセッション開始時のダッシュボード表示後は選択UIを使わず、ユーザーの自然な入力を待つ
+- ただしセッション開始時の状況把握（`aipatto_task_list` によるダッシュボード表示）後は選択UIを使わず、ユーザーの自然な入力を待つ
 
 ## project.md の自動取得
 
@@ -22,94 +22,62 @@
 
 ## セッション開始フロー
 
-CLAUDE.mdのステップ1-6完了後（または初回セットアップ完了後）、以下の手順でダッシュボードを表示する。
+CLAUDE.md のステップ完了後、AiPatto MCP の DB ツールで作業状況を把握しダッシュボードを表示する。状況の正は D1（user_task / user_todo / user_todo_perform）であり、三層モデルと各ツールの一般仕様は directives_session「作業管理」節を参照する。
 
-### 1. タスク一覧の収集
+### 1. 状況の取得
 
-`_claude/tasks/` を確認し、done/ 以外のタスクを収集する:
+- `aipatto_task_list`（必要に応じ `include_closed`）で作業フォルダ（user_task）一覧と各 task 配下の todo 件数を取得する。
+- 個別 task の中身（配下 todo の状態）が要るときは `aipatto_task_get` で取得する（＝DB 版ダッシュボード）。
 
-- **pending/**: 通常タスク（未実行）
-- **review/**: 通常タスク（レビュー待ち）
-- **ref/ 以下**: 各リポ名フォルダ内の `.ref.md` を検出し、参照先のソースコード用リポの `_tasks/` を GitHub API で確認して状態（pending or review）を把握する
+### 2. ダッシュボード表示
 
-### 2. 作業フォルダ一覧の収集
+ウェルカムメッセージに続けて取得結果を MD テーブルで表示する。task が無ければ「作業フォルダはまだありません」と表示する。状態は todo の is_draft/is_close と最新 perform の status から導出する（⏳ 未着手＝perform 無し、📝 レビュー待ち＝perform 完了・todo 未クローズ）。
 
-リポジトリルート直下のフォルダを収集する（`_claude`、`_reference`、`_archive`、`.git` は除外）。各フォルダの `_context.md` から「次にやること」を取得する。`_context.md` が存在しないフォルダは「（未着手）」とする。
+（例）
 
-### 3. ダッシュボード表示
+📂 作業フォルダ（user_task）:
 
-ウェルカムメッセージに続けて、以下の形式で表示する。タスクがなければタスク一覧は省略する。作業フォルダがなければ「作業フォルダはまだありません」と表示する。
+| フォルダ | 未完了 todo | 概要 |
+|---|---|---|
+| FlexRoute | 3 | フルフローテスト一式 |
 
-```
-📋 タスク:
-| タスク | 対象 | ステータス | 概要 |
+📋 未完了の依頼（user_todo）:
+
+| todo | 所属 task | 状態 | 概要 |
 |---|---|---|---|
-| 002_test-full-flow | FlexRoute | ⏳ 未実行 | フルフローテスト |
-| 003_fix-bug | — | 📝 レビュー待ち | バグ修正の実行結果 |
+| #12 | FlexRoute | ⏳ 未着手 | フルフローテスト |
+| #13 | — | 📝 レビュー待ち | バグ修正 |
 
-📂 作業フォルダ:
-| フォルダ | 次にやること |
-|---|---|
-| FlexRoute | マイルストーン1-6の作業再開 |
-| インストーラ作成 | setup.mdの通しテスト |
-```
-
-ステータスの種類:
-- ⏳ 未実行（pending/ または ref先の _tasks/pending/）
-- 📝 レビュー待ち（review/ または ref先の _tasks/review/）
-
-作業フォルダは `_context.md` の最終更新日時が新しい順に表示する。
-
-### 4. ユーザーの指示を待つ
+### 3. ユーザーの指示を待つ
 
 ダッシュボード表示後、ユーザーの自然な入力を待つ。
 
-**ユーザーが作業フォルダを指定した場合:**
-1. 該当フォルダの `_context.md` を読み込み、前回の状態を把握する
-2. `_context.md` が存在しない場合は新規作成する
-3. **ソースコード用リポジトリがある場合**: `_context.md` に「ソースコード用リポジトリ」が記載されている場合、そのリポジトリのCLAUDE.mdおよび仕様書等のMDを全文読み込み、最重要資料として扱う
+- **作業フォルダ（task）を指定された場合**: `aipatto_task_get` で当該 user_task と配下 todo を読み前回状態を把握する。body 等にソースコード用リポが記載されていれば、そのリポの CLAUDE.md・仕様書 MD を全文読み最重要資料とする。
+- **新規作業フォルダの作成を指示された場合**: `aipatto_task_create`（title / purpose / body）で user_task を作成する。詳細ヒアリングは作成後に行う。
 
-**ユーザーが新規フォルダの作成を指示した場合:**
-1. ユーザーが作業の概要を伝えたら、まずフォルダを作成し、`claude-office-Lib` リポジトリ（`tatugmad/claude-office-Lib`）の `workfolder-template/` から雛形ファイルをGitHub APIで取得してコピーする。**`raw.githubusercontent.com` はCDNキャッシュの影響を受けるため使用しない。**
-2. 詳細なヒアリングはフォルダ作成後に行う
+> 移行期フォールバック（非推奨）: ファイルベースの `_claude/tasks/` 収集・各フォルダ `_context.md` 走査・`aipatto_dashboard_get` は当面残置するが、状況把握の正は DB ツールとする。
 
 ## タスクキュー（作成・レビュー）
 
-### レビューの実施
+依頼と実行は DB の三層で扱う（一般仕様は directives_session「作業管理」節を参照）。本節は Chat 側の dev 固有運用に限る。
 
-レビューはセッション開始時に自動実行しない。ユーザーがレビューを指示した場合に実施する。
+### 依頼の起票（Chat → Code）
 
-**通常タスク（review/ にある場合）:**
-内容を読みレビューする。問題なければ `_claude/tasks/done/YYYY-MM/` に移動する。問題があれば修正して `pending/` に再配置する。
+ユーザーの要望が Code で実行すべき作業と判断した場合:
 
-**ソースコード用リポのタスク（ref/ 経由）:**
+1. `aipatto_todo_create` で user_todo を作成する（description に成果物の内容を確定して記載＝委任時の指示品質）。プロジェクト相当のまとまりがあれば先に `aipatto_task_create` で user_task を作り `user_task_seq` で todo を所属させる。
+2. Code への受け渡しは、対象 user_todo を指す最小限のプロンプトをユーザーに提示する（directives_session のハンドオフ運用に従い、本文に指示を書かずレコードを指す）。
 
-1. 参照先リポの `_tasks/review/` から本体を読む
-2. PRがある場合、GitHub APIでPRの差分を確認し、指示内容と突合する
-3. レビュー結果を指示ファイルの「レビュー結果（Chat側）」に追記する
-4. 問題がなければ以下を実施する:
-   a. PRをmainにマージする（GitHub API: `PUT /repos/{owner}/{repo}/pulls/{number}/merge`）
-   b. 作業ブランチを削除する（GitHub API: `DELETE /repos/{owner}/{repo}/git/refs/heads/{branch}`）
-   c. 必要に応じてデプロイを実施する（デプロイ手順はソースコード用リポのCLAUDE.mdに従う）
-   d. 本体を `_claude/tasks/done/YYYY-MM/` に保存する
-   e. ソースコード用リポの `_tasks/review/` から本体を削除する
-   f. `.ref.md` を削除する（フォルダ内に `.ref.md` が残っていなければフォルダ自体も削除する）
-5. 問題があれば修正した指示ファイルをソースコード用リポの `_tasks/pending/` に再配置する
+### レビュー（Code の実行後）
 
-### 指示ファイルの作成
+レビューはセッション開始時に自動実行せず、ユーザーの指示時に実施する。
 
-ユーザーの要望がClaudeコードで実行すべき作業と判断した場合:
+1. 対象 user_todo の最新 `user_todo_perform`（result / status / qa）を `aipatto_task_get` または `aipatto_todo_get` で読む。
+2. **現物確認**: perform に記録された PR / commit の diff を GitHub API で実取得し変更ファイルと突合する（報告だけで完結させない）。
+3. 問題なければ `aipatto_todo_complete` でクローズする（is_close）。ソースコード用リポの PR マージ・ブランチ削除・デプロイは Chat が実施する（dev 固有・据え置き）。
+4. 問題があれば修正依頼を新たな user_todo として起票する。
 
-**通常の作業:**
-1. 指示ファイルをCLAUDE.mdの形式に従って作成し、`_claude/tasks/pending/` に配置する
-2. commit & push する
-3. ユーザーに「Claudeコードで実行してください」と伝える
-
-**ソースコード用リポジトリがある作業:**
-1. 指示ファイルの本体をCLAUDE.mdの形式に従って作成し、ソースコード用リポの `_tasks/pending/` に配置する（GitHub API使用）
-2. リンクファイル（`.ref.md`）を `_claude/tasks/ref/{リポ名}/` に配置する（フォルダが存在しなければ作成する）
-3. 両方を commit & push する
-4. ユーザーに「Claudeコードで実行してください」と伝える
+> 移行期フォールバック（非推奨）: `_claude/tasks/{pending,review,done}` の指示ファイル ライフサイクルおよび `ref/.ref.md` は当面残置するが、起票・レビューの正は DB ツールとする。
 
 
 
